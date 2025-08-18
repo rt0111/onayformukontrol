@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satınalma Süreci Analiz Asistanı</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+
+
+        .header {
+            margin-bottom: 80px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #2563eb;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            color: white;
+            font-size: 2rem;
+        }
+
+        h1 {
+            color: #1e293b;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 1.25rem;
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            padding: 60px 40px;
+            border-radius: 25px;
+            text-align: center;
+            margin-top: 50px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .upload-section h2 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .upload-section > p {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 20px;
+            padding: 50px 40px;
+            margin: 40px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            background: white;
+        }
+
+        .upload-area:hover {
+            border-color: #2196f3;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #2196f3;
+            background: #f0f8ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 80px;
+            color: #2196f3;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            color: #2196f3;
+        }
+
+        .upload-text {
+            color: #333;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .upload-subtext {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 18px 50px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
+            margin: 30px 0;
+            min-width: 200px;
+        }
+
+        .btn:hover {
+            background: #1976d2;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-container {
+            display: none;
+            margin: 30px 0;
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .progress-text {
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .result-container {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+            border-radius: 15px;
+            border-left: 5px solid #48bb78;
+        }
+
+        .error-container {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+            border-radius: 15px;
+            border-left: 5px solid #f56565;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin: 50px 0;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .feature {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #f0f0f0;
+        }
+
+        .feature:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .feature:nth-child(1) .feature-icon {
+            color: #ff9800;
+        }
+
+        .feature:nth-child(2) .feature-icon {
+            color: #4caf50;
+        }
+
+        .feature:nth-child(3) .feature-icon {
+            color: #2196f3;
+        }
+
+        .feature-icon {
+            font-size: 60px;
+            margin-bottom: 25px;
+        }
+
+        .feature-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .feature-desc {
+            color: #666;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .upload-area {
+                padding: 40px 15px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <h1>Satınalma Süreci Analiz Asistanı</h1>
+            <p class="subtitle">PDF onay formlarınızı yükleyerek otomatik risk analizi, onay mercii tespiti ve satınalma kararı özeti alın</p>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="feature-title">Risk Analizi</div>
+                <div class="feature-desc">Ticari, etik ve yasal riskleri otomatik tespit eder</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="feature-title">Onay Mercii</div>
+                <div class="feature-desc">Alım değerine göre doğru onay mercini belirler</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="feature-title">Detaylı Özet</div>
+                <div class="feature-desc">Satınalma kararını madde madde özetler</div>
+            </div>
+        </div>
+
+        <div class="upload-section">
+            <h2>PDF Onay Formu Yükleyin</h2>
+            <p>Satınalma onay formunuzu yükleyerek analiz işlemini başlatın</p>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+                <div class="upload-text">PDF dosyanızı buraya sürükleyin</div>
+                <div class="upload-subtext">veya dosya seçmek için tıklayın (Max: 16MB)</div>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf">
+            </div>
+
+            <button class="btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()">
+                Analizi Başlat
+            </button>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Analiz başlatılıyor...</div>
+        </div>
+
+        <div class="result-container" id="resultContainer">
+            <h3><i class="fas fa-check-circle"></i> Analiz Tamamlandı!</h3>
+            <p id="resultText"></p>
+            <button class="btn" id="viewResultBtn">
+                <i class="fas fa-eye"></i> Sonuçları Görüntüle
+            </button>
+        </div>
+
+        <div class="error-container" id="errorContainer">
+            <h3><i class="fas fa-exclamation-triangle"></i> Hata Oluştu</h3>
+            <p id="errorText"></p>
+            <button class="btn" onclick="location.reload()">
+                <i class="fas fa-redo"></i> Tekrar Dene
+            </button>
+        </div>
+
+        </div>
+    </div>
+
+    <script>
+        let currentFileId = null;
+        let pollInterval = null;
+
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const resultContainer = document.getElementById('resultContainer');
+        const errorContainer = document.getElementById('errorContainer');
+        const resultText = document.getElementById('resultText');
+        const errorText = document.getElementById('errorText');
+        const viewResultBtn = document.getElementById('viewResultBtn');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Dosya kontrolü
+            if (!file.type.includes('pdf')) {
+                showError('Lütfen sadece PDF dosyası seçin.');
+                return;
+            }
+
+            if (file.size > 16 * 1024 * 1024) {
+                showError('Dosya boyutu 16MB\'dan büyük olamaz.');
+                return;
+            }
+
+            uploadFile(file);
+        }
+
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // UI'yi güncelle
+            hideContainers();
+            showProgress();
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<div class="loading-spinner"></div>Yükleniyor...';
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentFileId = data.file_id;
+                    progressText.textContent = `${data.filename} analiz ediliyor...`;
+                    startPolling();
+                } else {
+                    showError(data.error || 'Yükleme hatası oluştu.');
+                }
+            })
+            .catch(error => {
+                showError('Ağ hatası: ' + error.message);
+            });
+        }
+
+        function startPolling() {
+            pollInterval = setInterval(() => {
+                fetch(`/status/${currentFileId}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateProgress(data);
+                    
+                    if (data.status === 'completed') {
+                        clearInterval(pollInterval);
+                        showResult(data);
+                    } else if (data.status === 'error') {
+                        clearInterval(pollInterval);
+                        showError(data.error || 'Analiz sırasında hata oluştu.');
+                    }
+                })
+                .catch(error => {
+                    clearInterval(pollInterval);
+                    showError('Durum kontrolü hatası: ' + error.message);
+                });
+            }, 1000);
+        }
+
+        function updateProgress(data) {
+            const progress = data.progress || 0;
+            progressFill.style.width = progress + '%';
+            
+            if (data.status === 'analyzing') {
+                progressText.textContent = `Analiz ediliyor... %${progress}`;
+            }
+        }
+
+        function showProgress() {
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+        }
+
+        function showResult(data) {
+            hideContainers();
+            resultContainer.style.display = 'block';
+            
+            const riskCount = data.risk_sayisi || 0;
+            const riskText = riskCount > 0 ? `${riskCount} risk tespit edildi` : 'Risk tespit edilmedi';
+            
+            resultText.innerHTML = `
+                <strong>${data.filename}</strong> başarıyla analiz edildi.<br>
+                ${riskText} • Onay mercii: ${data.onay_mercii}<br>
+                Toplam değer: ${data.formatted_amount}
+            `;
+            
+            viewResultBtn.onclick = () => {
+                window.location.href = `/result/${currentFileId}`;
+            };
+            
+            resetUpload();
+        }
+
+        function showError(message) {
+            hideContainers();
+            errorContainer.style.display = 'block';
+            errorText.textContent = message;
+            resetUpload();
+        }
+
+        function hideContainers() {
+            progressContainer.style.display = 'none';
+            resultContainer.style.display = 'none';
+            errorContainer.style.display = 'none';
+        }
+
+        function resetUpload() {
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Dosya Seç';
+            fileInput.value = '';
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Satınalma Süreci Analiz Asistanı - Gerekli Kütüphaneler
+
+# PDF okuma ve işleme
+PyPDF2>=3.0.0
+pdfplumber>=0.9.0
+
+# Test PDF oluşturma için
+reportlab>=4.0.0
+
+# Web framework
+Flask>=2.3.0
+Werkzeug>=2.3.0
+
+# NLP ve metin analizi
+scikit-learn>=1.3.0
+sumy>=0.11.0
+nltk>=3.8.0
