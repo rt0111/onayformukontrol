@@ -511,56 +511,9 @@
                 </div>
                 
                 <div class="summary-text">
-                    {% if result.ozet %}
-                        <div style="display: grid; gap: 20px;">
-                            {% if result.ozet.kullanim_amaci %}
-                            <div style="background: #f7fafc; padding: 15px; border-radius: 10px; border-left: 4px solid #4299e1;">
-                                <strong style="color: #2d3748;">• Kullanım Amacı:</strong><br>
-                                <span style="color: #4a5568;">{{ result.ozet.kullanim_amaci }}</span>
-                            </div>
-                            {% endif %}
-                            
-                            {% if result.ozet.son_alim_bilgileri %}
-                            <div style="background: #f7fafc; padding: 15px; border-radius: 10px; border-left: 4px solid #48bb78;">
-                                <strong style="color: #2d3748;">• Son Alım Bilgileri (Firma, Fiyat, Teslim Şekli, Miktar, Onay Numarası):</strong><br>
-                                <span style="color: #4a5568;">{{ result.ozet.son_alim_bilgileri }}</span>
-                            </div>
-                            {% endif %}
-                            
-                            {% if result.ozet.ihale_sureci %}
-                            <div style="background: #f7fafc; padding: 15px; border-radius: 10px; border-left: 4px solid #ed8936;">
-                                <strong style="color: #2d3748;">• İhale Süreci ve Katılan Firmalar:</strong><br>
-                                <span style="color: #4a5568;">{{ result.ozet.ihale_sureci }}</span>
-                            </div>
-                            {% endif %}
-                            
-                            {% if result.ozet.teklifler %}
-                            <div style="background: #f7fafc; padding: 15px; border-radius: 10px; border-left: 4px solid #9f7aea;">
-                                <strong style="color: #2d3748;">• Teklifler (Firma, Fiyat, Teslim Şekli, Vade, Tercih Durumu):</strong><br>
-                                <span style="color: #4a5568;">{{ result.ozet.teklifler }}</span>
-                            </div>
-                            {% endif %}
-                            
-                            {% if result.ozet.kabul_edilen_teklif %}
-                            <div style="background: #f7fafc; padding: 15px; border-radius: 10px; border-left: 4px solid #38b2ac;">
-                                <strong style="color: #2d3748;">• Kabul Edilen Teklif Bilgileri (Firma, Fiyat, Teslim, Vade, Toplam Değer):</strong><br>
-                                <span style="color: #4a5568;">{{ result.ozet.kabul_edilen_teklif }}</span>
-                            </div>
-                            {% endif %}
-                            
-                            {% if result.ozet.olumluluk_fayda_zarar %}
-                            <div style="background: #f7fafc; padding: 15px; border-radius: 10px; border-left: 4px solid #f56565;">
-                                <strong style="color: #2d3748;">• Olumluluk / Fayda - Zarar Hesapları:</strong><br>
-                                <span style="color: #4a5568;">{{ result.ozet.olumluluk_fayda_zarar }}</span>
-                            </div>
-                            {% endif %}
-                            
-                            {% if result.ozet.alim_karari %}
-                            <div style="background: #f7fafc; padding: 15px; border-radius: 10px; border-left: 4px solid #667eea;">
-                                <strong style="color: #2d3748;">• Alım Kararı (Hangi Firmadan, Hangi Şartlarla, Hangi Miktarda):</strong><br>
-                                <span style="color: #4a5568;">{{ result.ozet.alim_karari }}</span>
-                            </div>
-                            {% endif %}
+                    {% if result.ozet and result.ozet.alim_karari %}
+                        <div style="background: #f7fafc; padding: 20px; border-radius: 10px; border-left: 4px solid #667eea;">
+                            <div style="color: #4a5568; line-height: 1.8; white-space: pre-line;">{{ result.ozet.alim_karari }}</div>
                         </div>
                     {% else %}
                         <p style="color: #718096; font-style: italic;">Satınalma kararı özeti oluşturulamadı.</p>

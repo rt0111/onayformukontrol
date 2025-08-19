@@ -215,21 +215,41 @@ class SatinalmaAnalizAsistani:
     
     def satinalma_karari_cikart(self, metin: str) -> str:
         """PDF metninden Satınalma Kararı bölümünü çıkarır"""
-        # Önce spesifik başlık kalıplarını dene
+        # Önce spesifik başlık kalıplarını dene - tüm metni sonuna kadar al
         baslik_kaliplari = [
-            r'satınalma\s+kararı[:\s]*([\s\S]*?)(?=\n\s*\n|\n\s*[A-Z]|$)',
-            r'purchasing\s+decision[:\s]*([\s\S]*?)(?=\n\s*\n|\n\s*[A-Z]|$)',
-            r'satın\s*alma\s+kararı[:\s]*([\s\S]*?)(?=\n\s*\n|\n\s*[A-Z]|$)',
-            r'procurement\s+decision[:\s]*([\s\S]*?)(?=\n\s*\n|\n\s*[A-Z]|$)'
+            r'satınalma\s+kararı\s*bölümü[:\s]*([\s\S]*)',
+            r'satınalma\s+kararı[:\s]*([\s\S]*)',
+            r'purchasing\s+decision[:\s]*([\s\S]*)',
+            r'satın\s*alma\s+kararı[:\s]*([\s\S]*)',
+            r'procurement\s+decision[:\s]*([\s\S]*)',
+            # Daha esnek kalıplar ekle
+            r'SATINALMA\s+KARARI\s*BÖLÜMÜ[:\s]*([\s\S]*)',
+            r'SATINALMA\s+KARARI[:\s]*([\s\S]*)',
+            r'SATIN\s*ALMA\s+KARARI[:\s]*([\s\S]*)'
         ]
         
         for kalip in baslik_kaliplari:
             eslesme = re.search(kalip, metin, re.IGNORECASE | re.MULTILINE)
             if eslesme:
-                return eslesme.group(1).strip()
+                # Tüm eşleşen metni al, hiçbir şeyi kesme
+                bulunan_metin = eslesme.group(1).strip()
+                if bulunan_metin:
+                    return bulunan_metin
         
-        # Eğer spesifik başlık bulunamazsa, tüm metni döndür
-        # Çünkü PDF'nin tamamı satınalma kararı ile ilgili olabilir
+        # Eğer başlık bulunamazsa, metinde 'karar' kelimesi geçen tüm paragrafları al
+        cumleler = metin.split('\n')
+        karar_cumleler = []
+        
+        for i, cumle in enumerate(cumleler):
+            if 'karar' in cumle.lower() or 'onay' in cumle.lower():
+                # Bu cümleden sonraki TÜM cümleleri al (sonuna kadar)
+                karar_cumleler.extend(cumleler[i:])
+                break
+        
+        if karar_cumleler:
+            return '\n'.join(karar_cumleler).strip()
+        
+        # Son çare olarak tüm metni döndür
         if metin and len(metin.strip()) > 50:
             return metin.strip()
         
@@ -1018,20 +1038,151 @@ class SatinalmaAnalizAsistani:
     def satinalma_karari_ozetle(self, karar_metni: str) -> Dict[str, str]:
         """Satınalma kararı metninden özet bilgileri çıkarır"""
         
+        # Önce 'Satınalma Kararı' başlığı altındaki metni çıkar
+        satinalma_karari_metni = self.satinalma_karari_cikart(karar_metni)
+        
+        # Eğer 'Satınalma Kararı' bölümü bulunamazsa, tüm metni kullan
+        if satinalma_karari_metni == "Satınalma kararı metni bulunamadı.":
+            satinalma_karari_metni = karar_metni
+        
+        # Metni temizle ve analiz için hazırla
+        temiz_metin = self.metin_temizle(satinalma_karari_metni)
+        
+        # Sadece alım kararı bilgilerini madde madde çıkar
+        alim_karari_detaylari = self._alim_karari_madde_madde_cikart(temiz_metin)
+        
         ozet = {
-            "kullanim_amaci": "Camın dayanıklılığını artırmak için cam kompozisyonlarında kullanılacak.",
-            "son_alim_bilgileri": "Q2-2025 döneminde Stroycomplect firmasından alım yapıldı. Fiyat: 66.500 Rub/ton, Teslim: DAP Posuda, Miktar: 110 ton, Onay numarası: 6900013679",
-            "ihale_sureci": "Q3-2025 için 120 tonluk ihale açıldı. Rusya-Ukrayna savaşı nedeniyle tedarikçiler Rusal firmasının bayileri üzerinden teklif verdi. Katılım gösteren firmalar: Korund (Avto), Stroycomplect. Adeon ihaleye katılmadı.",
-            "teklifler": "Korund (Avto): İlk teklif: 62.300 Rub/ton, Teslim: DAP Posuda, Vade: İlk başta 30 gün, sonra 45 gün. Revize edilmedi, fiyat uygun bulundu → tercih edildi. Stroycomplect: Önceki dönem fiyatı: 66.500 Rub/ton, Bu dönem teklifi: 66.400 Rub/ton, Teslim: DAP Posuda, vade: 90 gün. Yüksek fiyat nedeniyle tercih edilmedi.",
-            "kabul_edilen_teklif": "Korund (Avto) firması: 62.300 Rub/ton, DAP Posuda teslim, 45 gün vade, 120 ton",
-            "olumluluk_hesaplari": "LME Aluminium endeksi baz alındı (Q2: 2.533 USD/ton → Q3: 2.597,5 USD/ton). Ruble son 3 ayda USD karşısında %7 değer kazandı. Anlaşma fiyatı: 62.300 Rub/ton (793,53 USD/ton), Endeksli fiyat: 60.753 Rub/ton (773,82 USD/ton). Toplam olumsuzluk: 387.000 Rub. Buna rağmen, Stroycomplect teklifine göre 290.000 Rub (~2.700 $) avantajlı. Bütçeye göre toplam fayda: 2.131.656 Rub (~27.000 $)",
-            "alim_karari": "Q3-2025 dönemi için Korund (Avto) firmasından alım yapılmasına karar verilmiştir. Şartlar: 62.300 Rub/ton, DAP Posuda teslim, 45 gün vade, 120 ton."
+            "alim_karari": alim_karari_detaylari
         }
         
         return ozet
-        
-        return ozet
     
+    def _kullanim_amaci_cikart(self, metin: str) -> str:
+        """Metinden kullanım amacını çıkarır"""
+        anahtar_kelimeler = ['amaç', 'kullanım', 'kullanılacak', 'için', 'hedef', 'maksad']
+        cumleler = self.cumle_segmentasyonu(metin)
+        
+        for cumle in cumleler:
+            cumle_lower = cumle.lower()
+            if any(kelime in cumle_lower for kelime in anahtar_kelimeler):
+                if len(cumle) > 20:  # Çok kısa cümleleri filtrele
+                    return cumle.strip()
+        
+        return "Kullanım amacı belirtilmemiş."
+    
+    def _son_alim_bilgileri_cikart(self, metin: str) -> str:
+        """Metinden son alım bilgilerini çıkarır"""
+        anahtar_kelimeler = ['son alım', 'önceki', 'geçmiş', 'daha önce', 'Q1', 'Q2', 'Q3', 'Q4']
+        cumleler = self.cumle_segmentasyonu(metin)
+        
+        for cumle in cumleler:
+            cumle_lower = cumle.lower()
+            if any(kelime in cumle_lower for kelime in anahtar_kelimeler):
+                if any(x in cumle_lower for x in ['fiyat', 'rub', 'usd', 'ton', 'miktar']):
+                    return cumle.strip()
+        
+        return "Son alım bilgisi bulunamadı."
+    
+    def _ihale_sureci_cikart(self, metin: str) -> str:
+        """Metinden ihale süreci bilgilerini çıkarır"""
+        anahtar_kelimeler = ['ihale', 'tender', 'açıldı', 'süreç', 'katılım']
+        cumleler = self.cumle_segmentasyonu(metin)
+        
+        ihale_cumleler = []
+        for cumle in cumleler:
+            cumle_lower = cumle.lower()
+            if any(kelime in cumle_lower for kelime in anahtar_kelimeler):
+                ihale_cumleler.append(cumle.strip())
+        
+        if ihale_cumleler:
+            return ' '.join(ihale_cumleler[:2])  # İlk 2 cümleyi al
+        
+        return "İhale süreci bilgisi bulunamadı."
+    
+    def _teklifler_cikart(self, metin: str) -> str:
+        """Metinden teklif bilgilerini çıkarır"""
+        anahtar_kelimeler = ['teklif', 'firma', 'fiyat', 'rub/ton', 'usd/ton']
+        cumleler = self.cumle_segmentasyonu(metin)
+        
+        teklif_cumleler = []
+        for cumle in cumleler:
+            cumle_lower = cumle.lower()
+            if any(kelime in cumle_lower for kelime in anahtar_kelimeler):
+                if any(x in cumle_lower for x in ['rub', 'usd', 'ton']):
+                    teklif_cumleler.append(cumle.strip())
+        
+        if teklif_cumleler:
+            return ' '.join(teklif_cumleler[:3])  # İlk 3 cümleyi al
+        
+        return "Teklif bilgisi bulunamadı."
+    
+    def _kabul_edilen_teklif_cikart(self, metin: str) -> str:
+        """Metinden kabul edilen teklif bilgilerini çıkarır"""
+        anahtar_kelimeler = ['kabul', 'tercih', 'seçilen', 'karar', 'onaylandı']
+        cumleler = self.cumle_segmentasyonu(metin)
+        
+        for cumle in cumleler:
+            cumle_lower = cumle.lower()
+            if any(kelime in cumle_lower for kelime in anahtar_kelimeler):
+                if any(x in cumle_lower for x in ['firma', 'rub', 'usd', 'ton']):
+                    return cumle.strip()
+        
+        return "Kabul edilen teklif bilgisi bulunamadı."
+    
+    def _olumluluk_hesaplari_cikart(self, metin: str) -> str:
+        """Metinden olumluluk hesapları bilgilerini çıkarır"""
+        anahtar_kelimeler = ['hesap', 'endeks', 'lme', 'avantaj', 'fayda', 'olumsuzluk']
+        cumleler = self.cumle_segmentasyonu(metin)
+        
+        hesap_cumleler = []
+        for cumle in cumleler:
+            cumle_lower = cumle.lower()
+            if any(kelime in cumle_lower for kelime in anahtar_kelimeler):
+                hesap_cumleler.append(cumle.strip())
+        
+        if hesap_cumleler:
+            return ' '.join(hesap_cumleler[:2])  # İlk 2 cümleyi al
+        
+        return "Olumluluk hesapları bilgisi bulunamadı."
+    
+    def _alim_karari_cikart(self, metin: str) -> str:
+        """Metinden alım kararı bilgilerini çıkarır"""
+        anahtar_kelimeler = ['karar', 'alım', 'satın', 'onay', 'yapılması']
+        cumleler = self.cumle_segmentasyonu(metin)
+        
+        for cumle in cumleler:
+            cumle_lower = cumle.lower()
+            if any(kelime in cumle_lower for kelime in anahtar_kelimeler):
+                if len(cumle) > 30:  # Yeterince detaylı cümleler
+                    return cumle.strip()
+        
+        return "Alım kararı bilgisi bulunamadı."
+    
+    def _alim_karari_madde_madde_cikart(self, metin: str) -> str:
+        """Satınalma kararı metnini madde madde düzenler"""
+        # Metni cümlelere ayır
+        cumleler = self.cumle_segmentasyonu(metin)
+        
+        # Boş ve çok kısa cümleleri filtrele
+        temiz_cumleler = []
+        for cumle in cumleler:
+            cumle = cumle.strip()
+            if len(cumle) > 20 and not cumle.startswith('EK-'):  # EK referanslarını atla
+                temiz_cumleler.append(cumle)
+        
+        # Madde madde formatla
+        if temiz_cumleler:
+            madde_listesi = []
+            for i, cumle in enumerate(temiz_cumleler[:10], 1):  # En fazla 10 madde
+                # Cümleyi düzenle
+                if not cumle.endswith('.'):
+                    cumle += '.'
+                madde_listesi.append(f"• {cumle}")
+            
+            return '\n'.join(madde_listesi)
+        
+        return "Satınalma kararı detayları bulunamadı."
+        
     def analiz_et(self, pdf_path: str) -> Dict[str, any]:
         """PDF'i analiz eder ve sonuçları döndürür"""
         try:
