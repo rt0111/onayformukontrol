@@ -15,6 +15,26 @@ from datetime import datetime
 import string
 import math
 
+def format_number_tr(number):
+    """Sayıyı Türk formatına çevirir (binlik nokta, ondalık virgül)"""
+    if number is None:
+        return "0,00"
+    
+    # Sayıyı string'e çevir
+    formatted = f"{number:,.2f}"
+    
+    # İngilizce formatı (1,234.56) -> Türk formatına (1.234,56) çevir
+    # Önce ondalık kısmı ayır
+    if '.' in formatted:
+        integer_part, decimal_part = formatted.rsplit('.', 1)
+        # Binlik ayırıcıları değiştir: virgül -> nokta
+        integer_part = integer_part.replace(',', '.')
+        # Türk formatında birleştir: nokta binlik, virgül ondalık
+        return f"{integer_part},{decimal_part}"
+    else:
+        # Ondalık kısım yok, sadece binlik ayırıcıları değiştir
+        return formatted.replace(',', '.') + ",00"
+
 try:
     import PyPDF2
 except ImportError:
@@ -706,7 +726,7 @@ class SatinalmaAnalizAsistani:
         if (sozlesme_suresi > 6 or kullanilan_deger > 150000) and not matbu_sozlesme:
             # Sözleşme süresi 6 aydan fazla veya tutar 150.000 Euro'dan fazla ve matbu sözleşme yapılmayacaksa
             onay_mercii = "Minimum Direktör"
-            hesaplama_nedeni = f"Sözleşme süresi {sozlesme_suresi} ay > 6 ay veya tutar {kullanilan_deger:,.2f} {para_birimi} > 150.000 Euro olduğu ve matbu sözleşme yapılmayacağı için Minimum Direktör onayına çıkmalı"
+            hesaplama_nedeni = f"Sözleşme süresi {sozlesme_suresi} ay > 6 ay veya tutar {format_number_tr(kullanilan_deger)} {para_birimi} > 150.000 Euro olduğu ve matbu sözleşme yapılmayacağı için Minimum Direktör onayına çıkmalı"
             return {
                 "kullanilan_deger": kullanilan_deger,
                 "hesaplama_nedeni": hesaplama_nedeni,

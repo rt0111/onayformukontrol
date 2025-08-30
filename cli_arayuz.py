@@ -11,6 +11,26 @@ import argparse
 from datetime import datetime
 from satinalma_analiz import SatinalmaAnalizAsistani
 
+def format_number_tr(number):
+    """Sayıyı Türk formatına çevirir (binlik nokta, ondalık virgül)"""
+    if number is None:
+        return "0,00"
+    
+    # Sayıyı string'e çevir
+    formatted = f"{number:,.2f}"
+    
+    # İngilizce formatı (1,234.56) -> Türk formatına (1.234,56) çevir
+    # Önce ondalık kısmı ayır
+    if '.' in formatted:
+        integer_part, decimal_part = formatted.rsplit('.', 1)
+        # Binlik ayırıcıları değiştir: virgül -> nokta
+        integer_part = integer_part.replace(',', '.')
+        # Türk formatında birleştir: nokta binlik, virgül ondalık
+        return f"{integer_part},{decimal_part}"
+    else:
+        # Ondalık kısım yok, sadece binlik ayırıcıları değiştir
+        return formatted.replace(',', '.') + ",00"
+
 def print_banner():
     """Program başlık banner'ını yazdırır"""
     banner = """
@@ -93,7 +113,7 @@ def format_summary_only(sonuc):
     output.append("SATINALMA KARARI ÖZETİ")
     output.append("=" * 50)
     
-    output.append(f"Toplam Alım Değeri: {sonuc.toplam_alim_degeri:,.2f} {sonuc.para_birimi}")
+    output.append(f"Toplam Alım Değeri: {format_number_tr(sonuc.toplam_alim_degeri)} {sonuc.para_birimi}")
     output.append(f"Onay Mercii: {sonuc.onay_mercii}")
     output.append("")
     
@@ -169,7 +189,7 @@ def main():
         if args.verbose:
             print(f"\n✅ Analiz tamamlandı: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
             print(f"📊 Risk Sayısı: {len(sonuc.risk_tespitleri)}")
-            print(f"💰 Toplam Değer: {sonuc.toplam_alim_degeri:,.2f} {sonuc.para_birimi}")
+            print(f"💰 Toplam Değer: {format_number_tr(sonuc.toplam_alim_degeri)} {sonuc.para_birimi}")
             print(f"👤 Onay Mercii: {sonuc.onay_mercii}")
     
     except Exception as e:

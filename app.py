@@ -37,9 +37,29 @@ def allowed_file(filename):
     """Dosya uzantısı kontrolü"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def format_number_tr(number):
+    """Sayıyı Türk formatına çevirir (binlik nokta, ondalık virgül)"""
+    if number is None:
+        return "0,00"
+    
+    # Sayıyı string'e çevir
+    formatted = f"{number:,.2f}"
+    
+    # İngilizce formatı (1,234.56) -> Türk formatına (1.234,56) çevir
+    # Önce ondalık kısmı ayır
+    if '.' in formatted:
+        integer_part, decimal_part = formatted.rsplit('.', 1)
+        # Binlik ayırıcıları değiştir: virgül -> nokta
+        integer_part = integer_part.replace(',', '.')
+        # Türk formatında birleştir: nokta binlik, virgül ondalık
+        return f"{integer_part},{decimal_part}"
+    else:
+        # Ondalık kısım yok, sadece binlik ayırıcıları değiştir
+        return formatted.replace(',', '.') + ",00"
+
 def format_currency(amount, currency='USD'):
-    """Para formatı"""
-    return f"{amount:,.2f} {currency}"
+    """Para formatı - Türk sayı formatında"""
+    return f"{format_number_tr(amount)} {currency}"
 
 def get_risk_color(kategori):
     """Risk kategorisine göre renk döndürür"""
@@ -252,6 +272,11 @@ def datetime_filter(dt):
 @app.template_filter('currency')
 def currency_filter(amount, currency='USD'):
     return format_currency(amount, currency)
+
+@app.template_filter('number_tr')
+def number_tr_filter(number):
+    """Sayıyı Türk formatına çevirir (binlik nokta, ondalık virgül)"""
+    return format_number_tr(number)
 
 # Error handlers
 @app.errorhandler(413)

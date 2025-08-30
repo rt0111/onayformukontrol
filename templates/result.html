@@ -375,7 +375,7 @@
                     <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 8px; border-left: 4px solid #667eea;">
                         <div style="font-weight: 600; color: #2d3748; margin-bottom: 5px;">Kullanılan Değer</div>
                         <div style="color: #4a5568; font-size: 1.1rem;">
-                            {{ "%.2f"|format(result.onay_kurgusu.kullanilan_deger) }} {{ result.onay_kurgusu.para_birimi }}
+                            {{ result.onay_kurgusu.kullanilan_deger|number_tr }} {{ result.onay_kurgusu.para_birimi }}
                             {% if result.onay_kurgusu.yillik_deger %}
                                 <small style="color: #718096;">(Yıllıklaştırılmış)</small>
                             {% endif %}
