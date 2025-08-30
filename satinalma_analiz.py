@@ -637,7 +637,53 @@ class SatinalmaAnalizAsistani:
         
         return ""
     
-    def onay_kurgusu_hesapla(self, toplam_deger: float, alim_tipi: str, sozlesme_suresi: int, para_birimi: str, yonetim_onay_gerekçesi: str = "") -> Dict[str, any]:
+    def matbu_sozlesme_bul(self, metin: str) -> bool:
+        """PDF'den matbu sözleşme yapılıp yapılmayacağını tespit eder"""
+        # Matbu sözleşme ile ilgili alanları ara
+        patterns = [
+            r'matbu\s+sözleşme\s+yapılacak\s+mı[?\s]*([^\n\r]*)',
+            r'matbu\s+sözleşme[:\s]*([^\n\r]*)',
+            r'sözleşme\s+türü[:\s]*([^\n\r]*)',
+            r'sözleşme\s+şekli[:\s]*([^\n\r]*)',
+            r'matbu[:\s]*([^\n\r]*)',
+            # Checkbox veya seçim alanları
+            r'☐\s*matbu\s+sözleşme|☑\s*matbu\s+sözleşme|✓\s*matbu\s+sözleşme',
+            r'\[\s*\]\s*matbu|\[x\]\s*matbu|\[X\]\s*matbu'
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, metin, re.IGNORECASE)
+            if match:
+                # Eşleşen metni analiz et
+                eslesme_metni = match.group(0).lower() if match.group(0) else ""
+                if len(match.groups()) > 0 and match.group(1):
+                    eslesme_metni += " " + match.group(1).lower()
+                
+                print(f"Matbu sözleşme eşleşmesi: {eslesme_metni}")
+                
+                # "Hayır", "No", "✗", boş checkbox gibi olumsuz ifadeler ara
+                olumsuz_ifadeler = ['hayır', 'hayir', 'no', 'yok', 'olmayacak', 'yapılmayacak', 
+                                  'yapilmayacak', '✗', 'x', '☐', '[ ]', 'boş', 'işaretlenmemiş']
+                
+                for olumsuz in olumsuz_ifadeler:
+                    if olumsuz in eslesme_metni:
+                        print(f"Matbu sözleşme: HAYIR ('{olumsuz}' bulundu)")
+                        return False
+                
+                # Olumlu ifadeler ara
+                olumlu_ifadeler = ['evet', 'yes', 'var', 'olacak', 'yapılacak', 'yapilacak', 
+                                 '✓', '☑', '[x]', '[X]', 'işaretli']
+                
+                for olumlu in olumlu_ifadeler:
+                    if olumlu in eslesme_metni:
+                        print(f"Matbu sözleşme: EVET ('{olumlu}' bulundu)")
+                        return True
+        
+        # Varsayılan olarak matbu sözleşme yapılacağını kabul et
+        print("Matbu sözleşme: EVET (varsayılan)")
+        return True
+    
+    def onay_kurgusu_hesapla(self, toplam_deger: float, alim_tipi: str, sozlesme_suresi: int, para_birimi: str, yonetim_onay_gerekçesi: str = "", matbu_sozlesme: bool = True) -> Dict[str, any]:
         """Onay kurgusu hesaplama mantığını uygular"""
         kullanilan_deger = toplam_deger
         hesaplama_nedeni = ""
@@ -648,6 +694,19 @@ class SatinalmaAnalizAsistani:
             # Danışmanlık ihalesi - tutar ne olursa olsun Genel Müdür onayı
             onay_mercii = "Genel Müdür"
             hesaplama_nedeni = "Yönetim Onay Gerekçesi 'Danışmanlık İhalesi' olduğu için tutar ne kadar olursa olsun Genel Müdür onayına çıkmalı"
+            return {
+                "kullanilan_deger": kullanilan_deger,
+                "hesaplama_nedeni": hesaplama_nedeni,
+                "onay_mercii": onay_mercii,
+                "yillik_deger": yillik_deger,
+                "para_birimi": para_birimi
+            }
+        
+        # Sözleşme süresi ve tutarına göre matbu sözleşme kontrolü
+        if (sozlesme_suresi > 6 or kullanilan_deger > 150000) and not matbu_sozlesme:
+            # Sözleşme süresi 6 aydan fazla veya tutar 150.000 Euro'dan fazla ve matbu sözleşme yapılmayacaksa
+            onay_mercii = "Minimum Direktör"
+            hesaplama_nedeni = f"Sözleşme süresi {sozlesme_suresi} ay > 6 ay veya tutar {kullanilan_deger:,.2f} {para_birimi} > 150.000 Euro olduğu ve matbu sözleşme yapılmayacağı için Minimum Direktör onayına çıkmalı"
             return {
                 "kullanilan_deger": kullanilan_deger,
                 "hesaplama_nedeni": hesaplama_nedeni,
@@ -1212,9 +1271,11 @@ class SatinalmaAnalizAsistani:
             tutar, para_birimi = self.toplam_alim_degeri_bul(metin)
             alim_tipi = self.alim_tipi_bul(metin)
             sozlesme_suresi = self.sozlesme_suresi_bul(metin)
+            yonetim_onay_gerekçesi = self.yonetim_onay_gerekçesi_bul(metin)
+            matbu_sozlesme = self.matbu_sozlesme_bul(metin)
             
             # Onay kurgusu hesapla
-            onay_kurgusu = self.onay_kurgusu_hesapla(tutar, alim_tipi, sozlesme_suresi, para_birimi)
+            onay_kurgusu = self.onay_kurgusu_hesapla(tutar, alim_tipi, sozlesme_suresi, para_birimi, yonetim_onay_gerekçesi, matbu_sozlesme)
             
             # Risk analizi
             riskler = self.risk_analizi_yap(metin)
@@ -1283,8 +1344,11 @@ class SatinalmaAnalizAsistani:
         # Yönetim onay gerekçesini tespit et
         yonetim_onay_gerekçesi = self.yonetim_onay_gerekçesi_bul(metin)
         
+        # Matbu sözleşme bilgisini tespit et
+        matbu_sozlesme = self.matbu_sozlesme_bul(metin)
+        
         # Onay kurgusu hesapla
-        onay_kurgusu = self.onay_kurgusu_hesapla(tutar, alim_tipi, sozlesme_suresi, para_birimi, yonetim_onay_gerekçesi)
+        onay_kurgusu = self.onay_kurgusu_hesapla(tutar, alim_tipi, sozlesme_suresi, para_birimi, yonetim_onay_gerekçesi, matbu_sozlesme)
         
         # Onay mercii (onay kurgusu hesabından al)
         onay_mercii = onay_kurgusu['onay_mercii']
